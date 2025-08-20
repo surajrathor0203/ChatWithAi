@@ -143,7 +143,7 @@ const handleCreateChat = async (e) => {
               </div>
             )}
           </div>
-          <button onClick={() => signOut()} className="signout-btn">Sign Out</button>
+          {/* <button onClick={() => signOut()} className="signout-btn">Sign Out</button> */}
         </div>
 
         <form onSubmit={handleCreateChat} className="new-chat-form">
@@ -183,6 +183,9 @@ const handleCreateChat = async (e) => {
             ))}
           </ul>
         )}
+        <div>
+           <button onClick={() => signOut()} className="signout-btn">Sign Out</button>
+        </div>
       </div>
 
       <div className="chat-main">

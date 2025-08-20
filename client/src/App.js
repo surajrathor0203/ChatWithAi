@@ -19,6 +19,14 @@ function ProtectedRoute({ children }) {
   return children;
 }
 
+function PublicRoute({ children }) {
+  const isAuthenticated = useAuthenticated();
+  if (isAuthenticated) {
+    return <Navigate to="/chatbot" />;
+  }
+  return children;
+}
+
 function App() {
   return (
     <NhostProvider nhost={nhost}>
@@ -27,9 +35,9 @@ function App() {
           <Route
             path="/"
             element={
-              <ProtectedRoute>
+              <PublicRoute>
                 <LandingPage />
-              </ProtectedRoute>
+              </PublicRoute>
             }
           />
           <Route
@@ -40,8 +48,22 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/signup" element={<SignupPage />} />
+          <Route
+            path="/login"
+            element={
+              <PublicRoute>
+                <LoginPage />
+              </PublicRoute>
+            }
+          />
+          <Route
+            path="/signup"
+            element={
+              <PublicRoute>
+                <SignupPage />
+              </PublicRoute>
+            }
+          />
         </Routes>
       </div>
     </NhostProvider>

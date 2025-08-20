@@ -300,6 +300,17 @@
   color: #1f2937;
 }
 
+.user-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.user-name {
+  font-size: 0.9rem;
+  color: #666;
+  margin-top: 2px;
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
   .chat-layout {

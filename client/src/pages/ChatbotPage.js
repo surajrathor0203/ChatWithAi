@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useSignOut } from '@nhost/react';
+import { useUserData, useSignOut } from '@nhost/react';
 import { gql, useSubscription, useMutation, useQuery } from '@apollo/client';
 import '../App.css';
 import '../styles/ChatbotPage.css';
 
-// GraphQL subscription
 const MESSAGES_SUBSCRIPTION = gql`
   subscription OnMessagesUpdated($chatId: uuid!) {
     messages(where: { chat_id: { _eq: $chatId } }, order_by: { created_at: asc }) {
@@ -16,10 +15,9 @@ const MESSAGES_SUBSCRIPTION = gql`
   }
 `;
 
-// Query for chats with user_id placeholder to be replaced dynamically
 const GET_CHATS = gql`
-  query GetChats {
-    chats(where: { user_id: { _eq: "X-Hasura-User-Id" } }) {
+  query GetChats($userId: uuid!) {
+    chats(where: { user_id: { _eq: $userId } }) {
       id
       created_at
       title
@@ -27,16 +25,15 @@ const GET_CHATS = gql`
   }
 `;
 
-// Mutation to create new chat
 const CREATE_CHAT = gql`
-  mutation CreateChat {
-    insert_chats_one(object: {}) {
+  mutation CreateChat($userId: uuid!, $title: String!) {
+    insert_chats_one(object: { user_id: $userId, title: $title }) {
       id
+      title
     }
   }
 `;
 
-// Mutation to insert user messages
 const SEND_MESSAGE = gql`
   mutation SendMessage($chatId: uuid!, $content: String!) {
     insert_messages_one(object: { chat_id: $chatId, content: $content, is_bot: false }) {
@@ -46,7 +43,6 @@ const SEND_MESSAGE = gql`
   }
 `;
 
-// Mutation to call sendMessage action
 const CHATBOT_ACTION = gql`
   mutation ChatbotAction($chatId: uuid!, $message: String!) {
     sendMessage(input: { chat_id: $chatId, message_content: $message }) {
@@ -56,65 +52,82 @@ const CHATBOT_ACTION = gql`
 `;
 
 const ChatbotPage = () => {
-  // const user = useUserData();
-  const { signOut } = useSignOut(); // Destructure the signOut function from the returned object
+  const user = useUserData();
+  const { signOut } = useSignOut();
   const [selectedChat, setSelectedChat] = useState(null);
   const [newMessage, setNewMessage] = useState('');
   const [newChatTitle, setNewChatTitle] = useState('');
+  const [error, setError] = useState(null);
   const messagesEndRef = useRef(null);
 
-  // Fetch chats
-  const { data: chatsData, loading: chatsLoading } = useQuery(GET_CHATS);
+  const { data: chatsData, loading: chatsLoading, refetch: refetchChats } = useQuery(GET_CHATS, {
+    variables: { userId: user?.id },
+    skip: !user?.id,
+  });
 
-  // Subscribe to messages for selected chat
   const { data: messagesData } = useSubscription(MESSAGES_SUBSCRIPTION, {
     variables: { chatId: selectedChat },
     skip: !selectedChat,
   });
 
   const [createChat] = useMutation(CREATE_CHAT, {
-    refetchQueries: [{ query: GET_CHATS }],
+    onCompleted(data) {
+      setSelectedChat(data.insert_chats_one.id);
+      setNewChatTitle('');
+      refetchChats();
+      setError(null);
+    },
+    onError(err) {
+      setError(err.message);
+    },
   });
 
   const [sendMessageMutation] = useMutation(SEND_MESSAGE);
   const [triggerChatbot] = useMutation(CHATBOT_ACTION);
 
   useEffect(() => {
-    if (chatsData && chatsData.chats.length > 0 && !selectedChat) {
+    if (chatsData?.chats.length > 0 && !selectedChat) {
       setSelectedChat(chatsData.chats[0].id);
     }
   }, [chatsData, selectedChat]);
 
-  // Auto-scroll to bottom of messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messagesData]);
 
-  const handleCreateChat = async (e) => {
-    e.preventDefault();
-    if (!newChatTitle.trim()) return;
-    try {
-      const { data } = await createChat();
-      setNewChatTitle('');
-      setSelectedChat(data.insert_chats_one.id);
-    } catch (error) {
-      console.error('Error creating chat:', error);
-    }
-  };
+  
+const handleCreateChat = async (e) => {
+  e.preventDefault();
+  console.log('userId:', user?.id);
+  console.log('title:', newChatTitle);
+  if (!user?.id || !newChatTitle) {
+    alert('Missing user ID or chat title');
+    return;
+  }
+  try {
+    await createChat({
+      variables: {
+        userId: user.id,
+        title: newChatTitle,
+      },
+    });
+  } catch (error) {
+    console.error('Error creating chat:', error);
+    alert('Error: ' + error.message);
+  }
+};
+
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!newMessage.trim() || !selectedChat) return;
     try {
-      await sendMessageMutation({
-        variables: { chatId: selectedChat, content: newMessage },
-      });
-      await triggerChatbot({
-        variables: { chatId: selectedChat, message: newMessage },
-      });
+      await sendMessageMutation({ variables: { chatId: selectedChat, content: newMessage } });
+      await triggerChatbot({ variables: { chatId: selectedChat, message: newMessage } });
       setNewMessage('');
-    } catch (error) {
-      console.error('Error sending message:', error);
+      setError(null);
+    } catch (err) {
+      setError('Failed to send message.');
     }
   };
 
@@ -122,11 +135,15 @@ const ChatbotPage = () => {
     <div className="chat-layout">
       <div className="chat-sidebar">
         <div className="sidebar-header">
-          <h2>Your Conversations</h2>
-          <button onClick={() => signOut()} className="signout-btn">
-            <span className="signout-icon"></span>
-            Sign Out
-          </button>
+          <div className="user-info">
+            <h2>Your Conversations</h2>
+            {user && (
+              <div className="user-name">
+                Hello, {user.displayName || user.email?.split('@')[0] || 'User'}
+              </div>
+            )}
+          </div>
+          <button onClick={() => signOut()} className="signout-btn">Sign Out</button>
         </div>
 
         <form onSubmit={handleCreateChat} className="new-chat-form">
@@ -137,10 +154,12 @@ const ChatbotPage = () => {
             placeholder="New conversation title"
             className="new-chat-input"
           />
-          <button type="submit" className="new-chat-btn">
+          <button type="submit" className="new-chat-btn" disabled={!newChatTitle.trim()}>
             <span className="plus-icon"></span>
           </button>
         </form>
+
+        {error && <p className="error-message">{error}</p>}
 
         {chatsLoading ? (
           <div className="loading-indicator">
@@ -158,9 +177,7 @@ const ChatbotPage = () => {
                 <div className="chat-icon"></div>
                 <div className="chat-details">
                   <span className="chat-title">{chat.title || 'New Conversation'}</span>
-                  <span className="chat-date">
-                    {new Date(chat.created_at).toLocaleDateString()}
-                  </span>
+                  <span className="chat-date">{new Date(chat.created_at).toLocaleDateString()}</span>
                 </div>
               </li>
             ))}
@@ -177,10 +194,7 @@ const ChatbotPage = () => {
                   <div className="message-bubble">
                     <div className="message-text">{message.content}</div>
                     <div className="message-time">
-                      {new Date(message.created_at).toLocaleTimeString([], {
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
+                      {new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </div>
                   </div>
                 </div>

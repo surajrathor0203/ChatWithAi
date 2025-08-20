@@ -32,38 +32,10 @@ function App() {
     <NhostProvider nhost={nhost}>
       <div className="App">
         <Routes>
-          <Route
-            path="/"
-            element={
-              <PublicRoute>
-                <LandingPage />
-              </PublicRoute>
-            }
-          />
-          <Route
-            path="/chatbot"
-            element={
-              <ProtectedRoute>
-                <ChatbotPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/login"
-            element={
-              <PublicRoute>
-                <LoginPage />
-              </PublicRoute>
-            }
-          />
-          <Route
-            path="/signup"
-            element={
-              <PublicRoute>
-                <SignupPage />
-              </PublicRoute>
-            }
-          />
+          <Route path="/" element={<PublicRoute><LandingPage /></PublicRoute>} />
+          <Route path="/chatbot" element={<ProtectedRoute><ChatbotPage /></ProtectedRoute>} />
+          <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
+          <Route path="/signup" element={<PublicRoute><SignupPage /></PublicRoute>} />
         </Routes>
       </div>
     </NhostProvider>

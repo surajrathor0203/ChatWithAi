@@ -2,15 +2,19 @@ import { ApolloClient, InMemoryCache, split, HttpLink, ApolloLink } from '@apoll
 import { getMainDefinition } from '@apollo/client/utilities';
 import { GraphQLWsLink } from '@apollo/client/link/subscriptions';
 import { createClient } from 'graphql-ws';
+import { NhostClient } from '@nhost/nhost-js';
 
-// HTTP link for queries and mutations
+const nhost = new NhostClient({
+  subdomain: process.env.REACT_APP_NHOST_SUBDOMAIN,
+  region: process.env.REACT_APP_NHOST_REGION,
+});
+
 const httpLink = new HttpLink({
   uri: process.env.REACT_APP_GRAPHQL_HTTP,
 });
 
-// Authorization middleware for HTTP requests
 const authLink = new ApolloLink((operation, forward) => {
-  const token = localStorage.getItem('nhostAccessToken');
+  const token = nhost.auth.getAccessToken();
   operation.setContext(({ headers = {} }) => ({
     headers: {
       ...headers,
@@ -22,33 +26,25 @@ const authLink = new ApolloLink((operation, forward) => {
 
 const httpAuthLink = authLink.concat(httpLink);
 
-// WebSocket link for subscriptions
 const wsLink = new GraphQLWsLink(
   createClient({
     url: process.env.REACT_APP_GRAPHQL_WS.replace('https', 'wss'),
     connectionParams: async () => {
-      const token = localStorage.getItem('nhostAccessToken');
-      return token
-        ? { headers: { Authorization: `Bearer ${token}` } }
-        : {};
+      const token = nhost.auth.getAccessToken();
+      return token ? { headers: { Authorization: `Bearer ${token}` } } : {};
     },
   })
 );
 
-// Split link directs subscriptions to wsLink, others to httpAuthLink
 const splitLink = split(
   ({ query }) => {
-    const definition = getMainDefinition(query);
-    return (
-      definition.kind === 'OperationDefinition' &&
-      definition.operation === 'subscription'
-    );
+    const def = getMainDefinition(query);
+    return def.kind === 'OperationDefinition' && def.operation === 'subscription';
   },
   wsLink,
   httpAuthLink
 );
 
-// Apollo Client instance
 const client = new ApolloClient({
   link: splitLink,
   cache: new InMemoryCache(),

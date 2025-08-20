@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useUserData, useSignOut } from '@nhost/react';
+import { useSignOut } from '@nhost/react';
 import { gql, useSubscription, useMutation, useQuery } from '@apollo/client';
 import '../App.css';
 import '../styles/ChatbotPage.css';

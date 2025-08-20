@@ -32,7 +32,8 @@ const stats = [
 const LoginPage = () => {
 	const [email, setEmail] = useState('');
 	const [password, setPassword] = useState('');
-	const { signInEmailPassword, isLoading, isSuccess, error } = useSignInEmailPassword();
+	const { signInEmailPassword, isLoading, isSuccess } = useSignInEmailPassword();
+	const [errorMsg, setErrorMsg] = useState('');
 	const navigate = useNavigate();
 	const [tab, setTab] = useState('login');
 	const [fade, setFade] = useState(true);
@@ -48,7 +49,12 @@ const LoginPage = () => {
 
 	const handleSubmit = async (e) => {
 		e.preventDefault();
-		await signInEmailPassword(email, password);
+		try {
+			await signInEmailPassword(email, password);
+			setErrorMsg('');
+		} catch (err) {
+			setErrorMsg('Login failed. Please check your credentials.');
+		}
 	};
 
 	useEffect(() => {
@@ -205,6 +211,7 @@ const LoginPage = () => {
 										'Sign In'
 									)}
 								</button>
+								{errorMsg && <div className="auth-error">{errorMsg}</div>}
 							</form>
 							{/* <div className="login-split-or">Or continue with</div>
 							<div className="login-split-socials">
@@ -223,7 +230,23 @@ const LoginPage = () => {
 								</Link>
 							</div> */}
 							<p className="auth-link">
-								<Link to="/">Back to Home</Link>
+								<button
+									type="button"
+									className="btn btn-outline"
+									style={{
+										background: 'none',
+										border: 'none',
+										color: 'var(--secondary-color)',
+										fontWeight: 500,
+										cursor: 'pointer',
+										textDecoration: 'underline',
+										fontSize: '1rem',
+										padding: 0
+									}}
+									onClick={() => window.location.href = '/'}
+								>
+									Back to Home
+								</button>
 							</p>
 						</div>
 					</div>

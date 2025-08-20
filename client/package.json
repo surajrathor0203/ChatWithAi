@@ -4,6 +4,7 @@
   "private": true,
   "dependencies": {
     "@apollo/client": "^3.13.9",
+    "@nhost/nhost-js": "^3.3.0",
     "@nhost/react": "^3.11.1",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.7.0",

@@ -56,8 +56,8 @@ const CHATBOT_ACTION = gql`
 `;
 
 const ChatbotPage = () => {
-  const user = useUserData();
-  const signOut = useSignOut();
+  // const user = useUserData();
+  const { signOut } = useSignOut(); // Destructure the signOut function from the returned object
   const [selectedChat, setSelectedChat] = useState(null);
   const [newMessage, setNewMessage] = useState('');
   const [newChatTitle, setNewChatTitle] = useState('');

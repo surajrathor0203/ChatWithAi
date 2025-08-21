@@ -2,12 +2,7 @@ import { ApolloClient, InMemoryCache, split, HttpLink, ApolloLink } from '@apoll
 import { getMainDefinition } from '@apollo/client/utilities';
 import { GraphQLWsLink } from '@apollo/client/link/subscriptions';
 import { createClient } from 'graphql-ws';
-import { NhostClient } from '@nhost/nhost-js';
-
-const nhost = new NhostClient({
-  subdomain: process.env.REACT_APP_NHOST_SUBDOMAIN,
-  region: process.env.REACT_APP_NHOST_REGION,
-});
+import { nhost } from './nhost'; // IMPORT SINGLETON NHOST
 
 const httpLink = new HttpLink({
   uri: process.env.REACT_APP_GRAPHQL_HTTP,

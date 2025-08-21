@@ -25,9 +25,10 @@ const GET_CHATS = gql`
   }
 `;
 
+// Updated mutation: remove user_id from input object
 const CREATE_CHAT = gql`
-  mutation CreateChat($userId: uuid!, $title: String!) {
-    insert_chats_one(object: { user_id: $userId, title: $title }) {
+  mutation CreateChat($title: String!) {
+    insert_chats_one(object: { title: $title }) {
       id
       title
     }
@@ -95,28 +96,25 @@ const ChatbotPage = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messagesData]);
 
-  
-const handleCreateChat = async (e) => {
-  e.preventDefault();
-  console.log('userId:', user?.id);
-  console.log('title:', newChatTitle);
-  if (!user?.id || !newChatTitle) {
-    alert('Missing user ID or chat title');
-    return;
-  }
-  try {
-    await createChat({
-      variables: {
-        userId: user.id,
-        title: newChatTitle,
-      },
-    });
-  } catch (error) {
-    console.error('Error creating chat:', error);
-    alert('Error: ' + error.message);
-  }
-};
-
+  const handleCreateChat = async (e) => {
+    e.preventDefault();
+    console.log('userId:', user?.id);
+    console.log('title:', newChatTitle);
+    if (!newChatTitle) {
+      alert('Missing chat title');
+      return;
+    }
+    try {
+      await createChat({
+        variables: {
+          title: newChatTitle,
+        },
+      });
+    } catch (error) {
+      console.error('Error creating chat:', error);
+      alert('Error: ' + error.message);
+    }
+  };
 
   const handleSendMessage = async (e) => {
     e.preventDefault();

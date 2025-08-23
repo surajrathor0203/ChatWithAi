@@ -32,7 +32,7 @@ const stats = [
 const LoginPage = () => {
 	const [email, setEmail] = useState('');
 	const [password, setPassword] = useState('');
-	const { signInEmailPassword, isLoading, isSuccess } = useSignInEmailPassword();
+	const { signInEmailPassword, isLoading, isSuccess, error } = useSignInEmailPassword();
 	const [errorMsg, setErrorMsg] = useState('');
 	const navigate = useNavigate();
 	const [tab, setTab] = useState('login');
@@ -53,6 +53,7 @@ const LoginPage = () => {
 			await signInEmailPassword(email, password);
 			setErrorMsg('');
 		} catch (err) {
+			// fallback, but nhost error is handled below
 			setErrorMsg('Login failed. Please check your credentials.');
 		}
 	};
@@ -174,6 +175,7 @@ const LoginPage = () => {
 										className="auth-input landing-auth-input"
 										placeholder="your@email.com"
 										required
+										disabled={isLoading}
 									/>
 								</div>
 								<div className="form-group">
@@ -187,6 +189,7 @@ const LoginPage = () => {
 										className="auth-input landing-auth-input"
 										placeholder="••••••••"
 										required
+										disabled={isLoading}
 									/>
 								</div>
 								<div className="login-split-row">
@@ -203,14 +206,20 @@ const LoginPage = () => {
 									disabled={isLoading}
 									style={{ marginTop: '1rem' }}
 								>
-									{isLoading ? (
-										<span className="loading-spinner">
-											<span className="spinner"></span> Logging in...
-										</span>
-									) : (
-										'Sign In'
-									)}
+									{isLoading ? 'Loading...' : 'Sign In'}
 								</button>
+								{/* Error popup logic */}
+								{error && (
+									<div className="auth-error">
+										{error?.message?.includes('invalid password') && 'Incorrect password. Please try again.'}
+										{error?.message?.includes('user not found') && 'Email not found. Please check your email.'}
+										{error?.message?.includes('email not verified') && 'Email not verified. Please verify your email before logging in.'}
+										{!error?.message?.includes('invalid password') &&
+											!error?.message?.includes('user not found') &&
+											!error?.message?.includes('email not verified') &&
+											'Login failed. Please check your credentials.'}
+									</div>
+								)}
 								{errorMsg && <div className="auth-error">{errorMsg}</div>}
 							</form>
 							{/* <div className="login-split-or">Or continue with</div>
@@ -257,3 +266,4 @@ const LoginPage = () => {
 };
 
 export default LoginPage;
+		

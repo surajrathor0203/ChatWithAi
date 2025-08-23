@@ -47,7 +47,7 @@ const stats = [
 const SignupPage = () => {
 	const [email, setEmail] = useState('');
 	const [password, setPassword] = useState('');
-	const { signUpEmailPassword, isLoading, isSuccess } = useSignUpEmailPassword();
+	const { signUpEmailPassword, isLoading, isSuccess, error } = useSignUpEmailPassword();
 	const [errorMsg, setErrorMsg] = useState('');
 	const navigate = useNavigate();
 	const [tab, setTab] = useState('signup');
@@ -199,6 +199,7 @@ const SignupPage = () => {
 										className="auth-input landing-auth-input"
 										placeholder="your@email.com"
 										required
+										disabled={isLoading}
 									/>
 								</div>
 								<div className="form-group">
@@ -212,6 +213,7 @@ const SignupPage = () => {
 										className="auth-input landing-auth-input"
 										placeholder="••••••••"
 										required
+										disabled={isLoading}
 									/>
 								</div>
 								<button
@@ -220,14 +222,20 @@ const SignupPage = () => {
 									disabled={isLoading}
 									style={{ marginTop: '1rem' }}
 								>
-									{isLoading ? (
-										<span className="loading-spinner">
-											<span className="spinner"></span> Creating account...
-										</span>
-									) : (
-										'Sign Up'
-									)}
+									{isLoading ? 'Loading...' : 'Sign Up'}
 								</button>
+								{/* Error popup logic */}
+								{error && (
+									<div className="auth-error">
+										{error?.message?.includes('already registered') && 'Email is already registered. Please use another email.'}
+										{error?.message?.includes('invalid email') && 'Invalid email address. Please check your email.'}
+										{error?.message?.includes('password') && 'Password is too weak. Please use a stronger password.'}
+										{!error?.message?.includes('already registered') &&
+											!error?.message?.includes('invalid email') &&
+											!error?.message?.includes('password') &&
+											'Signup failed. Please try again.'}
+									</div>
+								)}
 								{errorMsg && <div className="auth-error">{errorMsg}</div>}
 							</form>
 							{/* <div className="login-split-or">Or continue with</div>
@@ -274,3 +282,4 @@ const SignupPage = () => {
 };
 
 export default SignupPage;
+		

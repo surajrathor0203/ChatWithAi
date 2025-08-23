@@ -769,92 +769,322 @@ h1, h2, h3, h4 {
   .hero {
     flex-direction: column;
     text-align: center;
-    gap: 3.5rem; /* Increased */
+    gap: 2rem;
+    padding: 2rem 2%;
   }
-  
-  .hero-buttons, .stats-container {
-    justify-content: center;
+  .hero-content {
+    max-width: 100%;
+    margin: 0 auto;
   }
-  
-  .footer-content {
+  .hero-image {
+    height: 220px;
+    width: 100%;
+    margin: 0 auto;
+  }
+  .footer-grid-container {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+  .footer-links-container {
     grid-template-columns: repeat(2, 1fr);
-  }
-  
-  .hero-title {
-    font-size: 2.2rem; /* Reduced */
+    gap: 1rem;
   }
 }
 
 @media (max-width: 768px) {
   .navbar {
     flex-direction: column;
-    gap: 1.5rem; /* Increased */
+    gap: 1rem;
+    padding: 1rem 2%;
   }
-  
   .nav-links {
-    gap: 1.5rem; /* Increased */
+    flex-wrap: wrap;
+    gap: 1rem;
+    justify-content: center;
   }
-  
+  .nav-buttons {
+    gap: 0.5rem;
+    justify-content: center;
+  }
   .hero-title {
-    font-size: 1.8rem; /* Reduced */
+    font-size: 1.5rem;
   }
-  
   .hero-subtitle {
-    font-size: 1.1rem; /* Reduced */
+    font-size: 1rem;
+    height: auto;
   }
-  
-  .features-grid, .pricing-grid, .testimonial-grid {
+  .hero-content {
+    padding: 0;
+    max-width: 100%;
+  }
+  .hero-image {
+    height: 160px;
+    width: 100%;
+  }
+  .features-grid,
+  .pricing-grid,
+  .testimonial-grid {
     grid-template-columns: 1fr;
+    gap: 1rem;
   }
-  
-  .pricing-card.popular {
-    transform: scale(1);
+  .stats-container {
+    flex-direction: column;
+    gap: 0.7rem;
+    align-items: center;
   }
-  
-  .footer-content {
+  .footer-grid-container {
     grid-template-columns: 1fr;
+    gap: 1rem;
+    padding-top: 2rem;
   }
-  
+  .footer-links-container {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  .footer-bottom-content {
+    flex-direction: column;
+    gap: 0.7rem;
+    align-items: flex-start;
+  }
   .section-title {
-    font-size: 2rem; /* Reduced */
+    font-size: 1.3rem;
+  }
+  .cta-content {
+    padding: 1rem;
+    max-width: 100%;
   }
 }
 
 @media (max-width: 480px) {
   body {
-    font-size: 14px; /* Reduced */
+    font-size: 13px;
   }
-  
-  .hero-title {
-    font-size: 1.2rem; /* Reduced */
+  .navbar {
+    padding: 0.7rem 1%;
+    flex-direction: column;
+    gap: 0.5rem;
   }
-  
-  .section-title {
-    font-size: 1.2rem; /* Reduced */
+  .logo {
+    font-size: 1.1rem;
   }
-  
+  .ai-badge {
+    font-size: 0.7rem;
+    padding: 0.1rem 0.3rem;
+  }
+  .nav-links {
+    gap: 0.5rem;
+    font-size: 0.9rem;
+  }
+  .nav-buttons {
+    gap: 0.3rem;
+  }
+  .btn,
   .btn-large {
-    padding: 0.7rem 1.2rem;
-    font-size: 1rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
   }
-}
-  
-  
+  .hero {
+    padding: 1rem 1%;
+    min-height: unset;
+  }
+  .hero-title {
+    font-size: 1.1rem;
+    margin-bottom: 0.7rem;
+  }
+  .hero-subtitle {
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+  }
+  .hero-description {
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+  }
+  .hero-image {
+    height: 100px;
+    min-width: 100px;
+  }
+  .neural-graphic {
+    width: 90px;
+    height: 90px;
+  }
+  .chat-bubble {
+    font-size: 0.8rem;
+    max-width: 110px;
+    padding: 0.5rem;
+  }
+  .bubble-left {
+    top: 10%;
+    left: 5%;
+  }
+  .bubble-right {
+    bottom: 10%;
+    right: 5%;
+  }
   .stats-container {
     flex-direction: column;
-    /* width: 100%; Adjusted for small screens */
+    gap: 0.5rem;
+    margin-top: 0.7rem;
   }
-  
-  .hero-title {
-    font-size: 2.8rem; /* Further adjusted for very small screens */
+  .stat-item h3 {
+    font-size: 1.1rem;
   }
-  
-  .section-title {
-    font-size: 2.4rem; /* Further adjusted for very small screens */
+  .stat-item p {
+    font-size: 0.7rem;
   }
-  
-  .btn-large {
-    padding: 1rem 2rem;
+  .features,
+  .pricing,
+  .testimonials,
+  .cta {
+    padding: 1.2rem 1%;
+  }
+  .features-grid,
+  .pricing-grid,
+  .testimonial-grid {
+    grid-template-columns: 1fr;
+    gap: 0.7rem;
+  }
+  .feature-card,
+  .pricing-card,
+  .testimonial-card {
+    padding: 0.7rem;
+    border-radius: 8px;
+  }
+  .feature-icon {
+    width: 28px;
+    height: 28px;
+    margin-bottom: 0.5rem;
+    border-radius: 5px;
+  }
+  .feature-card h3,
+  .pricing-header h3 {
+    font-size: 1rem;
+    margin-bottom: 0.4rem;
+  }
+  .feature-card p,
+  .pricing-features li,
+  .testimonial-text {
+    font-size: 0.8rem;
+  }
+  .pricing-header {
+    margin-bottom: 0.7rem;
+  }
+  .amount {
     font-size: 1.2rem;
   }
+  .period {
+    font-size: 0.8rem;
+  }
+  .pricing-features {
+    margin-bottom: 0.7rem;
+  }
+  .pricing-features li {
+    padding: 0.3rem 0;
+    padding-left: 0.5rem;
+  }
+  .pricing-features li::before {
+    font-size: 0.8rem;
+  }
+  .popular-badge {
+    font-size: 0.6rem;
+    padding: 0.15rem 0.4rem;
+    border-radius: 10px;
+    top: -7px;
+  }
+  .testimonial-stars {
+    font-size: 0.8rem;
+    margin-bottom: 0.3rem;
+  }
+  .testimonial-author {
+    gap: 0.3rem;
+  }
+  .author-avatar {
+    width: 22px;
+    height: 22px;
+  }
+  .author-details h4 {
+    font-size: 0.8rem;
+  }
+  .author-details p {
+    font-size: 0.7rem;
+  }
+  .cta-content {
+    padding: 0.7rem;
+    border-radius: 10px;
+    max-width: 100%;
+  }
+  .cta-content h2 {
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+  }
+  .cta-content p {
+    font-size: 0.8rem;
+    margin-bottom: 0.7rem;
+  }
+  .cta-buttons {
+    gap: 0.5rem;
+  }
+  .footer {
+    padding: 0 1% 0.7rem;
+    margin-top: 1rem;
+  }
+  .footer-wave {
+    top: -60px;
+  }
+  .footer-brand .logo {
+    margin-bottom: 0.5rem;
+  }
+  .footer-brand p {
+    font-size: 0.8rem;
+    margin-bottom: 0.7rem;
+  }
+  .social-icons {
+    gap: 0.3rem;
+  }
+  .social-icon {
+    width: 22px;
+    height: 22px;
+  }
+  .footer-links-container {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+  .footer-column h3 {
+    font-size: 0.8rem;
+    margin-bottom: 0.5rem;
+  }
+  .footer-column ul li {
+    margin-bottom: 0.3rem;
+  }
+  .footer-column ul li a {
+    font-size: 0.8rem;
+  }
+  .newsletter-form {
+    margin-top: 0.5rem;
+    gap: 0.3rem;
+  }
+  .newsletter-form input {
+    padding: 0.3rem 0.4rem;
+    font-size: 0.7rem;
+    border-radius: 5px;
+  }
+  .newsletter-form .btn {
+    padding: 0.3rem 0.5rem;
+    font-size: 0.7rem;
+  }
+  .footer-bottom {
+    padding-top: 0.7rem;
+  }
+  .footer-bottom-content {
+    flex-direction: column;
+    gap: 0.3rem;
+    align-items: flex-start;
+  }
+  .footer-bottom p,
+  .footer-bottom-links a {
+    font-size: 0.7rem;
+  }
+  .footer-bottom-links {
+    gap: 0.5rem;
+  }
+}
 

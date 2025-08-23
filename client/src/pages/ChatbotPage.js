@@ -80,6 +80,8 @@ const ChatbotPage = () => {
   const [confirmSignOut, setConfirmSignOut] = useState(false);
   const [editingChatId, setEditingChatId] = useState(null);
   const [editingTitle, setEditingTitle] = useState('');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const messagesEndRef = useRef(null);
 
   const { data: chatsData, loading: chatsLoading, refetch: refetchChats } = useQuery(GET_CHATS, {
@@ -123,6 +125,16 @@ const ChatbotPage = () => {
     }
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messagesData]);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    if (!isMobile) setSidebarOpen(false);
+  }, [isMobile]);
 
   const getUserInitials = () => {
     const name = user?.displayName || user?.email?.split('@')[0] || 'User';
@@ -245,7 +257,73 @@ const ChatbotPage = () => {
 
   return (
     <div className="chat-layout">
-      <div className="chat-sidebar">
+      {/* Mobile three-dot button */}
+      {isMobile && (
+        <button
+          className="mobile-sidebar-toggle"
+          style={{
+            position: 'fixed',
+            top: '1rem',
+            left: '1rem',
+            zIndex: 1100,
+            background: 'rgba(31,41,55,0.8)',
+            border: 'none',
+            borderRadius: '0.75rem',
+            width: '2.5rem',
+            height: '2.5rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+          }}
+          onClick={() => setSidebarOpen(true)}
+          aria-label="Open sidebar"
+        >
+          <span style={{
+            width: '1.5rem',
+            height: '1.5rem',
+            display: 'block',
+            backgroundImage: "url('data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"white\" viewBox=\"0 0 24 24\"><circle cx=\"5\" cy=\"12\" r=\"2\"/><circle cx=\"12\" cy=\"12\" r=\"2\"/><circle cx=\"19\" cy=\"12\" r=\"2\"/></svg>')",
+            backgroundRepeat: 'no-repeat',
+            backgroundPosition: 'center'
+          }}></span>
+        </button>
+      )}
+
+      {/* Sidebar overlay for mobile */}
+      {isMobile && sidebarOpen && (
+        <div
+          className="mobile-sidebar-overlay"
+          style={{
+            position: 'fixed',
+            top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0,0,0,0.4)',
+            zIndex: 1099,
+          }}
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <div
+        className="chat-sidebar"
+        style={
+          isMobile
+            ? {
+                position: 'fixed',
+                top: 0,
+                left: sidebarOpen ? 0 : '-100%',
+                height: '100vh',
+                width: '320px',
+                zIndex: 1101,
+                transition: 'left 0.3s',
+                boxShadow: sidebarOpen ? '2px 0 16px rgba(0,0,0,0.2)' : 'none',
+                background: 'rgba(31,41,55,0.95)',
+                display: 'block',
+              }
+            : {}
+        }
+      >
         <div className="sidebar-header">
           <div className="user-info">
             <div className="user-avatar">{getUserInitials()}</div>
@@ -284,7 +362,7 @@ const ChatbotPage = () => {
                 <div style={{ display: 'flex', alignItems: 'center' }}>
                   <button
                     className={`chat-item ${selectedChat === chat.id ? 'active' : ''}`}
-                    onClick={() => setSelectedChat(chat.id)}
+                    onClick={() => { setSelectedChat(chat.id); if (isMobile) setSidebarOpen(false); }}
                     style={{ flex: 1 }}
                   >
                     <div className="chat-icon"></div>
@@ -430,8 +508,13 @@ const ChatbotPage = () => {
                 onKeyPress={(e) => handleKeyPress(e, handleSendMessage)}
                 placeholder="Type your message..."
                 className="message-input"
+                disabled={!selectedChat}
               />
-              <button onClick={handleSendMessage} className="send-button" disabled={!newMessage.trim()}>
+              <button
+                onClick={handleSendMessage}
+                className="send-button"
+                disabled={!newMessage.trim() || !selectedChat}
+              >
                 <span className="send-icon"></span>
               </button>
             </div>
@@ -455,7 +538,7 @@ const ChatbotPage = () => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            zIndex: 1000,
+            zIndex: 1200, // <-- increased z-index
           }}
         >
           <div
@@ -509,7 +592,7 @@ const ChatbotPage = () => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            zIndex: 1000,
+            zIndex: 1200, // <-- increased z-index
           }}
         >
           <div

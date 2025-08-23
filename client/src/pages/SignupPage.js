@@ -49,6 +49,7 @@ const SignupPage = () => {
 	const [password, setPassword] = useState('');
 	const { signUpEmailPassword, isLoading, isSuccess, error } = useSignUpEmailPassword();
 	const [errorMsg, setErrorMsg] = useState('');
+	const [showSuccessPopup, setShowSuccessPopup] = useState(false);
 	const navigate = useNavigate();
 	const [tab, setTab] = useState('signup');
 	const [fade, setFade] = useState(true);
@@ -67,16 +68,29 @@ const SignupPage = () => {
 		try {
 			await signUpEmailPassword(email, password);
 			setErrorMsg('');
+			setShowSuccessPopup(true);
+			setEmail('');
+			setPassword('');
 		} catch (err) {
-			setErrorMsg('Signup failed. Please try again.');
+			setShowSuccessPopup(false); // Hide success popup on error
+			if (err?.status === 429 || err?.message?.includes('Too Many Requests')) {
+				setErrorMsg('Too many signup attempts. Please wait a moment and try again.');
+			} else {
+				setErrorMsg('Signup failed. Please try again.');
+			}
 		}
 	};
 
 	useEffect(() => {
 		if (isSuccess) {
-			navigate('/');
+			setShowSuccessPopup(true);
 		}
-	}, [isSuccess, navigate]);
+	}, [isSuccess]);
+
+	const handleLoginRedirect = () => {
+		setShowSuccessPopup(false);
+		navigate('/login');
+	};
 
 	// Add particles animation
 	useEffect(() => {
@@ -163,7 +177,7 @@ const SignupPage = () => {
 					</div>
 					{/* Right Side: Signup Form */}
 					<div className="login-split-right">
-						<div className="auth-card landing-auth-card">
+						<div className="auth-card landing-auth-card" style={{ position: 'relative' }}>
 							<h2
 								className="auth-title gradient-text"
 								style={{ fontSize: '2rem' }}
@@ -230,14 +244,55 @@ const SignupPage = () => {
 										{error?.message?.includes('already registered') && 'Email is already registered. Please use another email.'}
 										{error?.message?.includes('invalid email') && 'Invalid email address. Please check your email.'}
 										{error?.message?.includes('password') && 'Password is too weak. Please use a stronger password.'}
+										{error?.message?.includes('Too Many Requests') && 'Too many signup attempts. Please wait a moment and try again.'}
 										{!error?.message?.includes('already registered') &&
 											!error?.message?.includes('invalid email') &&
 											!error?.message?.includes('password') &&
+											!error?.message?.includes('Too Many Requests') &&
 											'Signup failed. Please try again.'}
 									</div>
 								)}
 								{errorMsg && <div className="auth-error">{errorMsg}</div>}
 							</form>
+							{/* Success popup */}
+							{showSuccessPopup && !error && (
+								<div className="auth-error" style={{
+									position: 'absolute',
+									top: '10px',
+									left: 0,
+									right: 0,
+									margin: 'auto',
+									width: 'fit-content',
+									background: '#e6fff3',
+									color: '#388e3c',
+									border: '1px solid #388e3c',
+									borderRadius: '6px',
+									padding: '1rem 2rem',
+									zIndex: 10,
+									boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+									display: 'flex',
+									flexDirection: 'column',
+									alignItems: 'center'
+								}}>
+									<div style={{ marginBottom: '0.75rem', fontWeight: 500 }}>
+										You are successfully signed up.<br />
+										Now verify your email, then login.
+									</div>
+									<button
+										type="button"
+										className="btn btn-primary"
+										style={{
+											marginTop: '0.5rem',
+											fontWeight: 500,
+											padding: '0.5rem 1.5rem',
+											cursor: 'pointer'
+										}}
+										onClick={handleLoginRedirect}
+									>
+										Go to Login
+									</button>
+								</div>
+							)}
 							{/* <div className="login-split-or">Or continue with</div>
 							<div className="login-split-socials">
 								<button className="login-split-social-btn">Google</button>
@@ -282,4 +337,3 @@ const SignupPage = () => {
 };
 
 export default SignupPage;
-		

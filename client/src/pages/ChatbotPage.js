@@ -17,7 +17,7 @@ const MESSAGES_SUBSCRIPTION = gql`
 
 const GET_CHATS = gql`
   query GetChats($userId: uuid!) {
-    chats(where: { user_id: { _eq: $userId } }) {
+    chats(where: { user_id: { _eq: $userId } }, order_by: { created_at: desc }) {
       id
       created_at
       title
@@ -51,6 +51,23 @@ const CHATBOT_ACTION = gql`
   }
 `;
 
+const DELETE_CHAT = gql`
+  mutation DeleteChat($chatId: uuid!) {
+    delete_chats_by_pk(id: $chatId) {
+      id
+    }
+  }
+`;
+
+const UPDATE_CHAT_TITLE = gql`
+  mutation UpdateChatTitle($chatId: uuid!, $title: String!) {
+    update_chats_by_pk(pk_columns: {id: $chatId}, _set: {title: $title}) {
+      id
+      title
+    }
+  }
+`;
+
 const ChatbotPage = () => {
   const user = useUserData();
   const { signOut } = useSignOut();
@@ -58,6 +75,11 @@ const ChatbotPage = () => {
   const [newMessage, setNewMessage] = useState('');
   const [newChatTitle, setNewChatTitle] = useState('');
   const [error, setError] = useState(null);
+  const [botTyping, setBotTyping] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [confirmSignOut, setConfirmSignOut] = useState(false);
+  const [editingChatId, setEditingChatId] = useState(null);
+  const [editingTitle, setEditingTitle] = useState('');
   const messagesEndRef = useRef(null);
 
   const { data: chatsData, loading: chatsLoading, refetch: refetchChats } = useQuery(GET_CHATS, {
@@ -84,14 +106,21 @@ const ChatbotPage = () => {
 
   const [sendMessageMutation] = useMutation(SEND_MESSAGE);
   const [triggerChatbot] = useMutation(CHATBOT_ACTION);
+  const [deleteChatMutation] = useMutation(DELETE_CHAT);
+  const [updateChatTitleMutation] = useMutation(UPDATE_CHAT_TITLE);
 
   useEffect(() => {
     if (chatsData?.chats.length > 0 && !selectedChat) {
-      setSelectedChat(chatsData.chats[0].id);
+      setSelectedChat(chatsData.chats[0].id); // chats[0] is now the latest chat
     }
   }, [chatsData, selectedChat]);
 
   useEffect(() => {
+    // Hide typing indicator when a new bot message arrives
+    if (botTyping && messagesData?.messages.length > 0) {
+      const lastMsg = messagesData.messages[messagesData.messages.length - 1];
+      if (lastMsg.is_bot) setBotTyping(false);
+    }
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messagesData]);
 
@@ -134,23 +163,84 @@ const ChatbotPage = () => {
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    // Defensive check for invalid chatId or empty message
     if (!newMessage.trim() || !selectedChat || selectedChat === '') return;
+
+    setBotTyping(true); // Show typing indicator
+    setNewMessage('');  // Clear input immediately
 
     try {
       await sendMessageMutation({ variables: { chatId: selectedChat, content: newMessage } });
       await triggerChatbot({ variables: { chatId: selectedChat, message: newMessage } });
-      setNewMessage('');
       setError(null);
     } catch (err) {
       setError('Failed to send message.');
+      setBotTyping(false);
     }
+  };
+
+  const handleDeleteChat = async (chatId) => {
+    setConfirmDeleteId(chatId);
+  };
+
+  const confirmDeleteChat = async () => {
+    if (!confirmDeleteId) return;
+    try {
+      await deleteChatMutation({ variables: { chatId: confirmDeleteId } });
+      refetchChats();
+      if (selectedChat === confirmDeleteId) {
+        const remainingChats = chatsData?.chats.filter(c => c.id !== confirmDeleteId);
+        setSelectedChat(remainingChats?.[0]?.id || null);
+      }
+      setConfirmDeleteId(null);
+    } catch (err) {
+      setError('Failed to delete chat.');
+      setConfirmDeleteId(null);
+    }
+  };
+
+  const cancelDeleteChat = () => {
+    setConfirmDeleteId(null);
+  };
+
+  const startEditChatTitle = (chatId, currentTitle) => {
+    setEditingChatId(chatId);
+    setEditingTitle(currentTitle || '');
+  };
+
+  const saveEditChatTitle = async (chatId) => {
+    if (!editingTitle.trim()) return;
+    try {
+      await updateChatTitleMutation({ variables: { chatId, title: editingTitle } });
+      setEditingChatId(null);
+      setEditingTitle('');
+      refetchChats();
+    } catch (err) {
+      setError('Failed to update chat title.');
+    }
+  };
+
+  const cancelEditChatTitle = () => {
+    setEditingChatId(null);
+    setEditingTitle('');
   };
 
   const handleKeyPress = (e, action) => {
     if (e.key === 'Enter') {
       action(e);
     }
+  };
+
+  const handleSignOutClick = () => {
+    setConfirmSignOut(true);
+  };
+
+  const confirmSignOutAction = () => {
+    setConfirmSignOut(false);
+    signOut();
+  };
+
+  const cancelSignOutAction = () => {
+    setConfirmSignOut(false);
   };
 
   return (
@@ -191,19 +281,115 @@ const ChatbotPage = () => {
           <ul className="chats-list">
             {chatsData?.chats.map((chat) => (
               <li key={chat.id}>
-                <button className={`chat-item ${selectedChat === chat.id ? 'active' : ''}`} onClick={() => setSelectedChat(chat.id)}>
-                  <div className="chat-icon"></div>
-                  <div className="chat-details">
-                    <span className="chat-title">{chat.title || 'New Conversation'}</span>
-                    <span className="chat-date">{formatTime(chat.created_at)}</span>
-                  </div>
-                </button>
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                  <button
+                    className={`chat-item ${selectedChat === chat.id ? 'active' : ''}`}
+                    onClick={() => setSelectedChat(chat.id)}
+                    style={{ flex: 1 }}
+                  >
+                    <div className="chat-icon"></div>
+                    <div className="chat-details">
+                      {editingChatId === chat.id ? (
+                        <span>
+                          <input
+                            type="text"
+                            value={editingTitle}
+                            onChange={e => setEditingTitle(e.target.value)}
+                            style={{
+                              fontSize: '0.875rem',
+                              borderRadius: '0.5rem',
+                              border: '1px solid #8b5cf6',
+                              padding: '0.25rem 0.5rem',
+                              width: '70%',
+                            }}
+                            autoFocus
+                            onKeyDown={e => {
+                              if (e.key === 'Enter') saveEditChatTitle(chat.id);
+                              if (e.key === 'Escape') cancelEditChatTitle();
+                            }}
+                          />
+                          <button
+                            style={{
+                              marginLeft: '0.25rem',
+                              background: 'none',
+                              border: 'none',
+                              color: '#8b5cf6',
+                              cursor: 'pointer',
+                            }}
+                            title="Save"
+                            onClick={() => saveEditChatTitle(chat.id)}
+                          >✔</button>
+                          <button
+                            style={{
+                              marginLeft: '0.25rem',
+                              background: 'none',
+                              border: 'none',
+                              color: '#ef4444',
+                              cursor: 'pointer',
+                            }}
+                            title="Cancel"
+                            onClick={cancelEditChatTitle}
+                          >✖</button>
+                        </span>
+                      ) : (
+                        <span className="chat-title">
+                          {chat.title || 'New Conversation'}
+                          <button
+                            style={{
+                              marginLeft: '0.5rem',
+                              background: 'none',
+                              border: 'none',
+                              color: '#38bdf8',
+                              cursor: 'pointer',
+                              fontSize: '1rem',
+                            }}
+                            title="Edit chat name"
+                            onClick={e => {
+                              e.stopPropagation();
+                              startEditChatTitle(chat.id, chat.title);
+                            }}
+                          >
+                            <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20">
+                              <path d="M17.414 2.586a2 2 0 00-2.828 0l-9.192 9.192A2 2 0 004 13.586V16a1 1 0 001 1h2.414a2 2 0 001.414-.586l9.192-9.192a2 2 0 000-2.828l-2.414-2.414zM5 15v-2.414l9-9L16.414 6l-9 9H5z"/>
+                            </svg>
+                          </button>
+                        </span>
+                      )}
+                      <span className="chat-date">{formatTime(chat.created_at)}</span>
+                    </div>
+                  </button>
+                  <button
+                    title="Delete chat"
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      marginLeft: '0.5rem',
+                      padding: 0,
+                      display: 'flex',
+                      alignItems: 'center'
+                    }}
+                    onClick={() => handleDeleteChat(chat.id)}
+                  >
+                    <span
+                      style={{
+                        width: '1.25rem',
+                        height: '1.25rem',
+                        display: 'inline-block',
+                        backgroundImage:
+                          "url('data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"%23f87171\"><path d=\"M6 19a2 2 0 002 2h8a2 2 0 002-2V7H6v12zm2.46-9.12a1 1 0 011.41 0l1.13 1.13 1.13-1.13a1 1 0 111.41 1.41l-1.13 1.13 1.13 1.13a1 1 0 01-1.41 1.41l-1.13-1.13-1.13 1.13a1 1 0 01-1.41-1.41l1.13-1.13-1.13-1.13a1 1 0 010-1.41z\"/><path d=\"M18 4V2H6v2H2v2h20V4h-4z\"/></svg>')",
+                        backgroundRepeat: 'no-repeat',
+                        backgroundPosition: 'center'
+                      }}
+                    ></span>
+                  </button>
+                </div>
               </li>
             ))}
           </ul>
         )}
 
-        <button onClick={() => signOut()} className="signout-btn">
+        <button onClick={handleSignOutClick} className="signout-btn">
           <span className="signout-icon"></span>Sign Out
         </button>
       </div>
@@ -223,6 +409,16 @@ const ChatbotPage = () => {
                   </div>
                 </div>
               ))}
+              {botTyping && (
+                <div className="message-wrapper bot">
+                  <div className="message-content">
+                    <div className="message-avatar"><div className="bot-icon"></div></div>
+                    <div className="message-bubble">
+                      <div className="message-text">typing...</div>
+                    </div>
+                  </div>
+                </div>
+              )}
               <div ref={messagesEndRef} />
             </div>
 
@@ -248,6 +444,115 @@ const ChatbotPage = () => {
           </div>
         )}
       </div>
+
+      {/* Confirm Delete Popup */}
+      {confirmDeleteId && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0,0,0,0.4)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+          }}
+        >
+          <div
+            style={{
+              background: '#18181b',
+              color: 'white',
+              borderRadius: '1rem',
+              padding: '2rem',
+              minWidth: '300px',
+              boxShadow: '0 4px 32px rgba(0,0,0,0.3)',
+              textAlign: 'center',
+            }}
+          >
+            <h3 style={{marginBottom: '1rem'}}>Delete Conversation?</h3>
+            <p style={{marginBottom: '1.5rem'}}>Are you sure you want to delete this chat? This action cannot be undone.</p>
+            <button
+              style={{
+                background: '#ef4444',
+                color: 'white',
+                border: 'none',
+                borderRadius: '0.5rem',
+                padding: '0.5rem 1.25rem',
+                marginRight: '0.75rem',
+                cursor: 'pointer',
+                fontWeight: 600,
+              }}
+              onClick={confirmDeleteChat}
+            >Delete</button>
+            <button
+              style={{
+                background: '#374151',
+                color: 'white',
+                border: 'none',
+                borderRadius: '0.5rem',
+                padding: '0.5rem 1.25rem',
+                cursor: 'pointer',
+                fontWeight: 600,
+              }}
+              onClick={cancelDeleteChat}
+            >Cancel</button>
+          </div>
+        </div>
+      )}
+      {/* Confirm Sign Out Popup */}
+      {confirmSignOut && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0,0,0,0.4)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+          }}
+        >
+          <div
+            style={{
+              background: '#18181b',
+              color: 'white',
+              borderRadius: '1rem',
+              padding: '2rem',
+              minWidth: '300px',
+              boxShadow: '0 4px 32px rgba(0,0,0,0.3)',
+              textAlign: 'center',
+            }}
+          >
+            <h3 style={{marginBottom: '1rem'}}>Sign Out?</h3>
+            <p style={{marginBottom: '1.5rem'}}>Are you sure you want to sign out?</p>
+            <button
+              style={{
+                background: '#ef4444',
+                color: 'white',
+                border: 'none',
+                borderRadius: '0.5rem',
+                padding: '0.5rem 1.25rem',
+                marginRight: '0.75rem',
+                cursor: 'pointer',
+                fontWeight: 600,
+              }}
+              onClick={confirmSignOutAction}
+            >Sign Out</button>
+            <button
+              style={{
+                background: '#374151',
+                color: 'white',
+                border: 'none',
+                borderRadius: '0.5rem',
+                padding: '0.5rem 1.25rem',
+                cursor: 'pointer',
+                fontWeight: 600,
+              }}
+              onClick={cancelSignOutAction}
+            >Cancel</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

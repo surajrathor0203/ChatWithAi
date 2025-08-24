@@ -19,6 +19,14 @@ const LandingPage = () => {
     });
   };
 
+  // Scroll to demo video section
+  const scrollToDemoVideo = () => {
+    const el = document.getElementById('demo-video');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   // For typing animation
   const [displayText, setDisplayText] = useState('');
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -112,6 +120,120 @@ const LandingPage = () => {
     return num;
   };
 
+  const documentationSteps = [
+    {
+      title: "Environment Setup",
+      items: [
+        "Create Accounts:",
+        "Nhost for authentication and database (Hasura).",
+        "Netlify to host the frontend.",
+        "n8n for automation and webhook workflows.",
+        "OpenRouter for chatbot API access."
+      ]
+    },
+    {
+      title: "Nhost Project: Authentication + Hasura",
+      items: [
+        "a) Setup Project",
+        "Create a new Nhost project.",
+        "Enable Hasura (GraphQL Engine) and Authentication.",
+        "b) Auth Configuration",
+        "Enable Email/Password authentication in Nhost dashboard.",
+        "c) Frontend Integration",
+        "Use Bolt or Nhost Auth SDK in your frontend (React/Next/other).",
+        "Implement Sign Up and Sign In forms.",
+        "After successful login, restrict all routes/components to authenticated users using Nhost's user session."
+      ]
+    },
+    {
+      title: "Database Design & Permissions",
+      items: [
+        "a) Tables",
+        "chats: id (uuid, PK), user_id (uuid, FK → auth.users), title (string, optional), created_at (timestamp)",
+        "messages: id (uuid, PK), chat_id (uuid, FK → chats.id), sender (enum: 'user' | 'bot'), content (string), created_at (timestamp)",
+        "b) Row-Level Security (RLS)",
+        "Enable RLS for both tables in Hasura.",
+        "Permission rule: Only allow rows where user_id = X-Hasura-User-Id.",
+        "Apply insert/select/update/delete permissions for the user role ONLY."
+      ]
+    },
+    {
+      title: "GraphQL Only Policy",
+      items: [
+        "All backend communication uses GraphQL.",
+        "No REST API calls—block unauthorized routes.",
+        "Use Hasura's GraphQL endpoint for queries, mutations, subscriptions in the frontend."
+      ]
+    },
+    {
+      title: "Hasura Action: sendMessage",
+      items: [
+        "a) Define Custom Action",
+        "Action Name: sendMessage",
+        "Input: chat_id, message_content",
+        "Output: chatbot reply (string).",
+        "b) Action Security",
+        "Restrict access using user role & require authentication.",
+        "Only allow if user owns chat_id.",
+        "c) Connect Action to n8n Webhook",
+        "Set the webhook URL to n8n's endpoint."
+      ]
+    },
+    {
+      title: "n8n Workflow: Chatbot Logic",
+      items: [
+        "a) Create Workflow",
+        "Set up HTTP Webhook trigger to receive incoming requests from Hasura Action.",
+        "b) Validate Ownership",
+        "Use incoming user_id + chat_id to query Hasura: Verify the sender owns the chat. Block/return error if unauthorized.",
+        "c) Call OpenRouter AI",
+        "Make an authenticated HTTP request from n8n to the OpenRouter API (e.g., GPT or free model).",
+        "Send message content, receive chatbot reply.",
+        "d) Save Bot Reply",
+        "Use n8n’s GraphQL node or HTTP node: Insert the bot’s reply as a new row in messages. Set sender = \"bot\".",
+        "e) Return reply",
+        "Respond to Hasura Action with bot’s answer."
+      ]
+    },
+    {
+      title: "Frontend Implementation",
+      items: [
+        "a) Chat List & Message View",
+        "Fetch user’s chats via Hasura GraphQL (with authenticated headers).",
+        "Use subscriptions for real-time updates of messages in chat.",
+        "b) Create New Chat & Send Messages",
+        "New chat: mutation to create entry in chats.",
+        "Sending user message: Mutation: insert message to messages. Mutation: trigger Hasura Action sendMessage.",
+        "Display bot’s reply when received.",
+        "c) Real-Time Updates",
+        "Subscribe to messages table for changes on current chat."
+      ]
+    },
+    {
+      title: "Permissions & Security",
+      items: [
+        "Double check Hasura permissions:",
+        "Only authenticated users with role user can access both tables & Action.",
+        "All mutations, queries, and subscriptions blocked for unauthenticated or other roles.",
+        "n8n must validate ownership for every request."
+      ]
+    },
+    {
+      title: "Deployment",
+      items: [
+        "Frontend: Deploy to Netlify. Set env variables for Hasura endpoint, Nhost project, etc.",
+        "n8n: Host on cloud (n8n cloud, personal VPS, Render, etc.)",
+        "Nhost: Project runs in the cloud automatically (Hasura + Auth).",
+        "Confirm that everything works end-to-end only for authenticated users."
+      ]
+    }
+  ];
+
+  // Add some icons for steps (can use emoji for simplicity)
+  const stepIcons = [
+    "🛠️", "🔐", "🗄️", "🔗", "⚡", "🤖", "💻", "🔒", "🚀"
+  ];
+
   return (
     <Transition visible={fade}>
       <div className="landing-page">
@@ -125,16 +247,14 @@ const LandingPage = () => {
             <span className="ai-badge">AI</span>
           </div>
           <div className="nav-links">
-            <a href="/" onClick={e => {e.preventDefault(); navigate('/');}}>Home</a>
-            <a href="#features">Features</a>
-            <a href="#pricing">Pricing</a>
-            <a href="#testimonials">Testimonials</a>
-            <a href="#faq">FAQ</a>
+            <a  onClick={scrollToTop}>Home</a>
+            {/* <a href="#features">Features</a> */}
+            <a href="#documentation">Project Documentation</a>
+            <a href="#demo-video" onClick={e => {e.preventDefault(); scrollToDemoVideo();}}>Demo Video</a>
           </div>
           <div className="nav-buttons">
             <button className="btn btn-outline" onClick={() => navigate('/login')}>Login</button>
             <button className="btn btn-outline" onClick={() => navigate('/signup')}>Signup</button>
-            {/* <button className="btn btn-primary" onClick={() => navigate('/chatbot')}>Chatbot</button> */}
           </div>
         </nav>
 
@@ -157,7 +277,7 @@ const LandingPage = () => {
             </p>
             <div className="hero-buttons">
               <button className="btn btn-primary btn-large" onClick={() => navigate('/signup')}>Start for Free</button>
-              <button className="btn btn-outline btn-large">Watch Demo</button>
+              <button className="btn btn-outline btn-large" onClick={scrollToDemoVideo}>Watch Demo</button>
             </div>
 
             <div className="stats-container" style={{ display: 'flex', flexDirection: 'row' }}>
@@ -189,174 +309,155 @@ const LandingPage = () => {
           </div>
         </section>
 
-        {/* Features Section */}
-        <section id="features" className="features">
-          <h2 className="section-title">Powerful <span className="gradient-text">Features</span></h2>
-          <p className="section-subtitle">Discover what makes NeuralChat AI stand out from the rest</p>
-          
-          <div className="features-grid">
-            <div className="feature-card">
-              <div className="feature-icon language-icon"></div>
-              <h3>Natural Language Understanding</h3>
-              <p>Advanced comprehension of context, sentiment, and nuance in human conversation.</p>
-            </div>
-            
-            <div className="feature-card">
-              <div className="feature-icon personalization-icon"></div>
-              <h3>Personalized Responses</h3>
-              <p>Adapts to individual user preferences and communication styles over time.</p>
-            </div>
-            
-            <div className="feature-card">
-              <div className="feature-icon integration-icon"></div>
-              <h3>Seamless Integration</h3>
-              <p>Easily connects with your existing platforms and software solutions.</p>
-            </div>
-            
-            <div className="feature-card">
-              <div className="feature-icon analytics-icon"></div>
-              <h3>Advanced Analytics</h3>
-              <p>Comprehensive insights into conversation patterns and user engagement.</p>
-            </div>
-            
-            <div className="feature-card">
-              <div className="feature-icon security-icon"></div>
-              <h3>Enterprise-Grade Security</h3>
-              <p>End-to-end encryption and compliance with global data protection standards.</p>
-            </div>
-            
-            <div className="feature-card">
-              <div className="feature-icon multilingual-icon"></div>
-              <h3>Multilingual Support</h3>
-              <p>Communicate fluently in over 50 languages with accurate translations.</p>
-            </div>
-          </div>
-        </section>
-
-        {/* Pricing Section */}
-        <section id="pricing" className="pricing">
-          <h2 className="section-title">Simple <span className="gradient-text">Pricing</span></h2>
-          <p className="section-subtitle">Choose the perfect plan for your needs</p>
-          
-          <div className="pricing-grid">
-            <div className="pricing-card">
-              <div className="pricing-header">
-                <h3>Starter</h3>
-                <div className="price">
-                  <span className="amount">$0</span>
-                  <span className="period">/month</span>
+        {/* Documentation Section */}
+        <section id="documentation" className="features" >
+          <h2 className="section-title" style={{ fontSize: '2.6rem', letterSpacing: '1px', marginBottom: '0.5rem' }}>
+            <span style={{ background: 'var(--gradient)', WebkitBackgroundClip: 'text', color: 'transparent' }}>Project Documentation</span>
+          </h2>
+          <p className="section-subtitle" style={{ fontSize: '1.2rem', marginBottom: '2rem', color: '#b3b3ff' }}>
+            <span style={{ background: 'var(--gradient)', WebkitBackgroundClip: 'text', color: 'transparent', fontWeight: 600 }}>Your complete guide to building the AI chat platform</span>
+          </p>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+            gap: '2rem',
+            margin: '0 auto',
+            maxWidth: '1200px'
+          }}>
+            {documentationSteps.map((step, idx) => (
+              <div
+                key={idx}
+                style={{
+                  background: 'rgba(255,255,255,0.04)',
+                  borderRadius: '18px',
+                  boxShadow: '0 4px 24px rgba(92,51,255,0.10)',
+                  padding: '2rem 1.5rem',
+                  border: '1px solid rgba(92,51,255,0.10)',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  transition: 'transform 0.2s',
+                }}
+                className="doc-step-card"
+              >
+                <div style={{
+                  position: 'absolute',
+                  top: '-24px',
+                  right: '-24px',
+                  fontSize: '5rem',
+                  opacity: 0.07,
+                  pointerEvents: 'none',
+                  userSelect: 'none'
+                }}>
+                  {stepIcons[idx] || "📄"}
                 </div>
-              </div>
-              <ul className="pricing-features">
-                <li>1,000 messages per month</li>
-                <li>Basic AI capabilities</li>
-                <li>Email support</li>
-                <li>Single user</li>
-                <li>Standard response time</li>
-              </ul>
-              <button className="btn btn-outline btn-full">Get Started</button>
-            </div>
-            
-            <div className="pricing-card popular">
-              <div className="popular-badge">Most Popular</div>
-              <div className="pricing-header">
-                <h3>Professional</h3>
-                <div className="price">
-                  <span className="amount">$29</span>
-                  <span className="period">/month</span>
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '1.2rem' }}>
+                  <div style={{
+                    width: '44px',
+                    height: '44px',
+                    borderRadius: '50%',
+                    background: 'var(--gradient)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '2rem',
+                    color: '#fff',
+                    fontWeight: 700,
+                    boxShadow: '0 2px 12px rgba(92,51,255,0.15)',
+                    marginRight: '1rem'
+                  }}>
+                    {stepIcons[idx] || "📄"}
+                  </div>
+                  <h3 style={{
+                    fontSize: '1.35rem',
+                    fontWeight: 700,
+                    color: '#fff',
+                    margin: 0,
+                    letterSpacing: '0.5px'
+                  }}>
+                    <span style={{
+                      background: 'var(--gradient)',
+                      WebkitBackgroundClip: 'text',
+                      color: 'transparent'
+                    }}>
+                      {`${idx + 1}. ${step.title}`}
+                    </span>
+                  </h3>
                 </div>
+                <ul style={{ paddingLeft: '1.2rem', marginTop: '0.7rem' }}>
+                  {step.items.map((item, i) => (
+                    <li key={i} style={{
+                      color: '#e0e0ff',
+                      marginBottom: '0.7rem',
+                      fontSize: '1.08rem',
+                      lineHeight: 1.7,
+                      position: 'relative',
+                      paddingLeft: '0.5rem'
+                    }}>
+                      <span style={{
+                        display: 'inline-block',
+                        width: '0.7em',
+                        marginRight: '0.5em',
+                        color: '#33d2ff'
+                      }}>•</span>
+                      {item}
+                    </li>
+                  ))}
+                </ul>
               </div>
-              <ul className="pricing-features">
-                <li>50,000 messages per month</li>
-                <li>Advanced AI capabilities</li>
-                <li>Priority support</li>
-                <li>Up to 5 team members</li>
-                <li>Custom training options</li>
-                <li>Analytics dashboard</li>
-              </ul>
-              <button className="btn btn-primary btn-full">Get Started</button>
-            </div>
-            
-            <div className="pricing-card">
-              <div className="pricing-header">
-                <h3>Enterprise</h3>
-                <div className="price">
-                  <span className="amount">Custom</span>
-                  <span className="period"></span>
-                </div>
-              </div>
-              <ul className="pricing-features">
-                <li>Unlimited messages</li>
-                <li>Full AI capabilities suite</li>
-                <li>24/7 dedicated support</li>
-                <li>Unlimited team members</li>
-                <li>Custom integration</li>
-                <li>Advanced security features</li>
-                <li>Dedicated account manager</li>
-              </ul>
-              <button className="btn btn-outline btn-full">Contact Sales</button>
-            </div>
-          </div>
-        </section>
-
-        {/* Testimonials Section */}
-        <section id="testimonials" className="testimonials">
-          <h2 className="section-title">Client <span className="gradient-text">Testimonials</span></h2>
-          <p className="section-subtitle">What our customers are saying about NeuralChat AI</p>
-          
-          <div className="testimonial-grid">
-            <div className="testimonial-card">
-              <div className="testimonial-stars">★★★★★</div>
-              <p className="testimonial-text">
-                "NeuralChat AI has transformed our customer service. Response times are down 80% and customer satisfaction is through the roof!"
-              </p>
-              <div className="testimonial-author">
-                <div className="author-avatar"></div>
-                <div className="author-details">
-                  <h4>Sarah Johnson</h4>
-                  <p>CTO, TechGlobal</p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="testimonial-card">
-              <div className="testimonial-stars">★★★★★</div>
-              <p className="testimonial-text">
-                "The personalization capabilities are mind-blowing. It's like the AI knows what our customers need before they even ask."
-              </p>
-              <div className="testimonial-author">
-                <div className="author-avatar"></div>
-                <div className="author-details">
-                  <h4>Michael Chen</h4>
-                  <p>Product Manager, InnovateCorp</p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="testimonial-card">
-              <div className="testimonial-stars">★★★★★</div>
-              <p className="testimonial-text">
-                "Implementation was seamless and the ROI was immediate. NeuralChat AI has become an essential part of our business operations."
-              </p>
-              <div className="testimonial-author">
-                <div className="author-avatar"></div>
-                <div className="author-details">
-                  <h4>Jessica Rivera</h4>
-                  <p>CEO, Startup Ventures</p>
-                </div>
-              </div>
-            </div>
+            ))}
           </div>
         </section>
 
         {/* CTA Section */}
-        <section className="cta">
+        <section className="cta" id="demo-video">
           <div className="cta-content">
-            <h2>Ready to revolutionize your <span className="gradient-text">conversations</span>?</h2>
-            <p>Join thousands of businesses already using NeuralChat AI to transform their customer interactions.</p>
-            <div className="cta-buttons">
-              <button className="btn btn-primary btn-large" onClick={() => navigateToAuth('signup')}>Get Started Now</button>
-              <button className="btn btn-outline btn-large">Schedule a Demo</button>
+            <h2>Demo Video</h2>
+            {/* Demo Image with Play Icon */}
+            <div style={{ margin: '1.5rem 0', display: 'flex', justifyContent: 'center', position: 'relative' }}>
+              <a
+                href="https://drive.google.com/file/d/1hGVf6DVsHyId0hiINIACOO655Xwnnhac/view?usp=sharing"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ display: 'inline-block', position: 'relative' }}
+              >
+                <img
+                  src="/demo-img.png"
+                  alt="Demo Video"
+                  style={{
+                    width: '100%',
+                    maxWidth: '480px',
+                    borderRadius: '12px',
+                    boxShadow: '0 4px 24px rgba(92,51,255,0.12)',
+                    cursor: 'pointer',
+                    transition: 'transform 0.2s',
+                    display: 'block'
+                  }}
+                  onMouseOver={e => (e.currentTarget.style.transform = 'scale(1.03)')}
+                  onMouseOut={e => (e.currentTarget.style.transform = 'scale(1)')}
+                />
+                {/* Play Icon Overlay */}
+                <span
+                  style={{
+                    position: 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    background: 'rgba(0,0,0,0.55)',
+                    borderRadius: '50%',
+                    width: '64px',
+                    height: '64px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    pointerEvents: 'none'
+                  }}
+                >
+                  <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+                    <circle cx="18" cy="18" r="18" fill="rgba(0,0,0,0.0)" />
+                    <polygon points="14,11 26,18 14,25" fill="#fff"/>
+                  </svg>
+                </span>
+              </a>
             </div>
           </div>
         </section>
@@ -407,10 +508,7 @@ const LandingPage = () => {
                 <h3>Product</h3>
                 <ul>
                   <li><a href="#features">Features</a></li>
-                  <li><a href="#pricing">Pricing</a></li>
-                  <li><a href="#">Integrations</a></li>
-                  <li><a href="#">Enterprise</a></li>
-                  <li><a href="#">Security</a></li>
+                  <li><a href="#documentation">Documentation</a></li>
                 </ul>
               </div>
               
@@ -465,4 +563,3 @@ const LandingPage = () => {
 };
 
 export default LandingPage;
-
